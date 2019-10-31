@@ -39,17 +39,10 @@ typedef struct Snack
 } Snack;
 Snack g_snack;
 
+int g_score;
+
 
 Position g_food;
-
-void DrawChar (int x,int y,char c)
-{
-	COORD coord;
-	coord.X = x;
-	coord.Y = y;
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),coord);
-	putchar(c);
-}
 
 
 void initmap()
@@ -77,38 +70,21 @@ void initmap()
 		}
 
 	}
+	printf("是兄弟就来贪吃蛇大战\n");
+	printf("w:上a:左s:下d:右\n");
+	printf("madeby 胖虎\n");
 }
 
-void Initfood()
+
+void DrawChar (int x,int y,char c)
 {
-	srand((unsigned int)time(NULL));
-	g_food.x = rand() % MAP_MIDTH;
-	g_food.y = rand() % MAP_HEIGHT;
+	COORD coord;
+	coord.X = x;
+	coord.Y = y;
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),coord);
+	putchar(c);
 }
 
-
-void DrawFood()
-{
-	DrawChar(g_food.x,g_food.y,'#');
-}
-
-
-
-
-
-
-void InitSnack()
-{
-	g_snack.size = 2;
-	g_snack.pos[0].x = MAP_MIDTH / 2;
-	g_snack.pos[0].y = MAP_HEIGHT / 2;
-
-	g_snack.pos[1].x = MAP_MIDTH / 2 - 1;
-	g_snack.pos[1].y = MAP_HEIGHT / 2;
-
-//	g_snack.pos[1].x = MAP_MIDTH / 2 - 2;
-//	g_snack.pos[1].y = MAP_HEIGHT / 2;
-}
 
 void DrawSnack()
 {
@@ -130,6 +106,38 @@ void DrawSnack()
 
 
 
+void DrawFood()
+{
+	DrawChar(g_food.x,g_food.y,'#');
+}
+
+
+void InitSnack()
+{
+	g_snack.size = 2;
+	g_snack.pos[0].x = MAP_MIDTH / 2;
+	g_snack.pos[0].y = MAP_HEIGHT / 2;
+
+	g_snack.pos[1].x = MAP_MIDTH / 2 - 1;
+	g_snack.pos[1].y = MAP_HEIGHT / 2;
+}
+
+
+void Initfood()
+{
+	srand((unsigned int)time(NULL));
+	g_food.x = rand() % MAP_MIDTH;
+	g_food.y = rand() % MAP_HEIGHT;
+}
+
+
+
+
+
+
+
+
+
 //w 上
 //S 下
 //a左
@@ -142,7 +150,7 @@ void snackmove(int key)
 	int delta_y = 0;
 	int i;
 
-	DrawChar(g_snack.pos[g_snack.size -1].x, g_snack.pos[g_snack.size -1].y, ' ');
+	DrawChar(g_snack.pos[g_snack.size-1].x,g_snack.pos[g_snack.size-1].y,'  ');
 
 
 	for ( i = g_snack.size - 1; i > 0; i--)
@@ -188,6 +196,37 @@ void snackmove(int key)
 
 }
 
+int hitwall()
+{
+	if(g_snack.pos[0].x < 0 ||
+		g_snack.pos[0].y < 0 ||
+		g_snack.pos[0].x > MAP_MIDTH ||
+		g_snack.pos[0].y > MAP_HEIGHT )
+	{
+		return -1;
+	}
+	return 0;
+}
+
+
+int hitself()
+{
+	int i;
+	for(i = 1;i < g_snack.size;i++)
+	{
+		if(g_snack.pos[0].x == g_snack.pos[i].x &&
+			g_snack.pos[0].y == g_snack.pos[i].y)
+		{
+			return -1;
+		}
+			
+	}
+	return 0;
+}
+
+
+
+
 void UpdateScreen()
 {
 	DrawSnack();
@@ -195,12 +234,15 @@ void UpdateScreen()
 
 void eatfood()
 {
-	if (g_snack.pos[0].x == g_food.x && g_snack.pos[0].y == g_food.y)
+	if (g_snack.pos[0].x == g_food.x && 
+		g_snack.pos[0].y == g_food.y)
 	{
+		Initfood();
+		g_snack.pos[g_snack.size - 1].x = g_snack.pos[g_snack.size - 1].x;
+		g_snack.pos[g_snack.size - 1].y = g_snack.pos[g_snack.size - 1].y;
+		 
 		g_snack.size++;
-		g_snack.pos[g_snack.size - 1].x = g_food.x;
-		g_snack.pos[g_snack.size - 1].y = g_food.y;
-		 	//Initfood();
+		g_score += 10;
 	}
 }
 
@@ -217,16 +259,27 @@ void gameloop()
 			key = _getch();
 			
 		}
+		snackmove(key);
 		if (key == 'q' || key == 'Q' )
 		{
 			return;
 		}
 
 		//printf("a\n");
-			eatfood();
-		
-		snackmove(key);
+		//	eatfood();
+		if (hitwall() < 0)
+		{
+			return;
+		}
+	/*	if(hitself() < 0)
+		{
+			return;
+		}*/
 		UpdateScreen();
+		eatfood();
+
+		DrawFood();
+	
 		Sleep(100);//延时2
 
 	}
@@ -235,28 +288,19 @@ void gameloop()
 
 
 
-void init()
-{	
-	initmap();
-	InitSnack();
- 	Initfood();
-	DrawSnack();
-
-}
-
-
 
 void Score()
 {
+	system("cls");
+	printf("GG\n");
+	printf("分数:%d\n",g_score);
 }
 
 int main(int argc, char* argv[])
 {
-	
-	init();//画地图
-	 Initfood();
-	DrawFood();
-//	eatfood();
+	initmap();//画地图
+	InitSnack();
+	Initfood();
 	gameloop();//打印得分
 	Score();//游戏主循环
 	return 0;
