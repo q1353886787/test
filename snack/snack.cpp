@@ -26,7 +26,7 @@ typedef struct Postin
 
 
 
-int g_score;
+//int g_score;
 
 
 typedef struct Snack
@@ -42,21 +42,24 @@ Snack g_snack;
 
 Position g_food;
 
-void DrawChar (int x,int y,char ch)
+void DrawChar (int x,int y,char c)
 {
-	COORD pos;
-	pos.X = x;
-	pos.Y = y;
-	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),pos);
-	putchar(ch);
+	COORD coord;
+	coord.X = x;
+	coord.Y = y;
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),coord);
+	putchar(c);
 }
 
 
 void initmap()
 {
-	for(int i = 0;i <= MAP_HEIGHT;i++)
+	int i;
+	int j;
+
+	for( i = 0;i <= MAP_HEIGHT;i++)
 	{
-		for(int j = 0;j <= MAP_MIDTH;j++)
+		for( j = 0;j <= MAP_MIDTH;j++)
 		{
 		
 			if(j == MAP_MIDTH)
@@ -76,16 +79,17 @@ void initmap()
 	}
 }
 
-void DrawFood()
-{
-	DrawChar(g_food.x,g_food.y,'#');
-}
-
 void Initfood()
 {
 	srand((unsigned int)time(NULL));
 	g_food.x = rand() % MAP_MIDTH;
 	g_food.y = rand() % MAP_HEIGHT;
+}
+
+
+void DrawFood()
+{
+	DrawChar(g_food.x,g_food.y,'#');
 }
 
 
@@ -95,22 +99,22 @@ void Initfood()
 
 void InitSnack()
 {
-	g_snack.size = 3;
+	g_snack.size = 2;
 	g_snack.pos[0].x = MAP_MIDTH / 2;
 	g_snack.pos[0].y = MAP_HEIGHT / 2;
 
 	g_snack.pos[1].x = MAP_MIDTH / 2 - 1;
 	g_snack.pos[1].y = MAP_HEIGHT / 2;
 
-	g_snack.pos[1].x = MAP_MIDTH / 2 - 2;
-	g_snack.pos[1].y = MAP_HEIGHT / 2;
+//	g_snack.pos[1].x = MAP_MIDTH / 2 - 2;
+//	g_snack.pos[1].y = MAP_HEIGHT / 2;
 }
 
 void DrawSnack()
 {
-	
+	int i;
 
-	for (int i = 0; i < g_snack.size; i++)
+	for (i = 0; i < g_snack.size; i++)
 	{
 		// head
 		if (i == 0)
@@ -125,13 +129,80 @@ void DrawSnack()
 }
 
 
+
+//w 上
+//S 下
+//a左
+//d右
+
+
+void snackmove(int key)
+{
+	int delta_x = 0;
+	int delta_y = 0;
+	int i;
+
+	DrawChar(g_snack.pos[g_snack.size -1].x, g_snack.pos[g_snack.size -1].y, ' ');
+
+
+	for ( i = g_snack.size - 1; i > 0; i--)
+	{
+		g_snack.pos[i].x = g_snack.pos[i-1].x;
+		g_snack.pos[i].y = g_snack.pos[i-1].y;
+	}
+
+
+
+	switch (key)
+	{
+	case 'w':
+	case 'W':
+		delta_x = 0;
+		delta_y = -1;
+		break;
+	case 'A':
+	case 'a':
+		delta_x = -1;
+		delta_y = 0;
+		break;
+	case 'd':
+	case 'D':
+		delta_x = 1;
+		delta_y = 0;
+		break;
+	case 's':
+	case 'S':
+		delta_x = 0;
+		delta_y = 1;
+		break;
+	default:
+		delta_x = 0;
+		delta_y = 0;
+		break;
+	}
+
+	g_snack.pos[0].x += delta_x;
+	g_snack.pos[0].y += delta_y;
+
+
+
+}
+
 void UpdateScreen()
 {
 	DrawSnack();
 }
 
-
-
+void eatfood()
+{
+	if (g_snack.pos[0].x == g_food.x && g_snack.pos[0].y == g_food.y)
+	{
+		g_snack.size++;
+		g_snack.pos[g_snack.size - 1].x = g_food.x;
+		g_snack.pos[g_snack.size - 1].y = g_food.y;
+		 	//Initfood();
+	}
+}
 
 
 void gameloop()
@@ -152,7 +223,9 @@ void gameloop()
 		}
 
 		//printf("a\n");
-
+			eatfood();
+		
+		snackmove(key);
 		UpdateScreen();
 		Sleep(100);//延时2
 
@@ -166,7 +239,9 @@ void init()
 {	
 	initmap();
 	InitSnack();
+ 	Initfood();
 	DrawSnack();
+
 }
 
 
@@ -179,11 +254,11 @@ int main(int argc, char* argv[])
 {
 	
 	init();//画地图
-	Score();//游戏主循环
-	gameloop();//打印得分
-	initmap();
+	 Initfood();
 	DrawFood();
-	Initfood();
+//	eatfood();
+	gameloop();//打印得分
+	Score();//游戏主循环
 	return 0;
 }
 
